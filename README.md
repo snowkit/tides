@@ -2,7 +2,7 @@
 
 ---
 
-Haxe `T`ools for `IDE s`upport 
+Haxe `T`ools for `IDE` `S`upport 
 
 ### What is tides?
 

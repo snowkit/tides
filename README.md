@@ -2,7 +2,8 @@ Haxe `T`ools for `IDE` `S`upport
 
 ### What is tides?
 
-A collection of shared tools, utilities and structures that have proven common across multiple Haxe IDE plugins (atom and sublime). 
+A collection of shared tools, utilities and structures, 
+that have become common across multiple Haxe IDE plugins (like atom and sublime). 
 
 ### Why?
 

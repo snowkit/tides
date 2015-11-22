@@ -21,7 +21,7 @@ This is specifically a shared, standalone dependency that can be used by IDE plu
 - Parsing Haxe `--display` completion results into consumable forms
 - Querying and running Haxe background processes for completion or compilation (for services like linting)
 - (future) Haxe documentation parsing services (see [scribe](https://github.com/underscorediscovery/scribe))
-- 
+
 ### Status
 
 - Immediate term atom and sublime are the focus

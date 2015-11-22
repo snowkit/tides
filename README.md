@@ -1,7 +1,3 @@
-## Haxe - tides
-
----
-
 Haxe `T`ools for `IDE` `S`upport 
 
 ### What is tides?

@@ -1,4 +1,4 @@
-package utils;
+package tides.parse;
 
 using StringTools;
 
@@ -727,7 +727,7 @@ typedef HaxeParsedSignature = {
     @:optional var used_keys:Array<String>;
 }
 
-
+@:allow(tides.parse.Haxe)
 private class RE {
 
         /** Match any single/double quoted string */

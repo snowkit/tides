@@ -533,6 +533,124 @@ class Haxe {
 
     } //parse_partial_signature
 
+        /* Find the position of the local declaration of the given identifier, from the given index.
+           It will take care of searching in scopes that can reach the index (thus, ignoring declarations in other code blocks)
+           Declarations can be:
+            * var `identifier`
+            * function `identifier`
+            * function foo(`identifier`
+            * function foo(arg1, `identifier`
+            * ...
+           Returns an index or -1 if nothing was found */
+    public static function find_local_declaration(text:String, identifier:String, index:Int) {
+
+            // Cleanup text
+        text = code_with_empty_comments_and_strings(text);
+
+        var i = index - 1;
+        var number_of_args = 0;
+        var number_of_parens = 0;
+        var number_of_braces = 0;
+        var number_of_lts = 0;
+        var number_of_brackets = 0;
+        var number_of_unclosed_parens = 0;
+        var number_of_unclosed_braces = 0;
+        var number_of_unclosed_lts = 0;
+        var number_of_unclosed_brackets = 0;
+        var c, m;
+        var identifier_last_char = identifier.charAt(identifier.length - 1);
+        var regex_identifier_decl = new EReg('(var|\\?|,|\\(|function)\\s*' + identifier + '$', '');
+
+        while (i > 0) {
+            c = text.charAt(i);
+
+            if (c == '"' || c == '\'') {
+                    // Continue until we reach the beginning of the string
+                while (i >= 0) {
+                    i--;
+                    if (text.charAt(i) == c) {
+                        i--;
+                        break;
+                    }
+                }
+            }
+            else if (c == identifier_last_char) {
+                if (number_of_braces == 0 && number_of_lts == 0 && number_of_brackets == 0) {
+                    if (regex_identifier_decl.match(text.substring(0, i + 1))) {
+                        m = regex_identifier_decl.matched(1);
+                        if (m == '(' || m == '?'  || m == ',') {
+                                // Is the identifier inside a signature? Ensure we are in a function declaration signature, not a simple call
+                            var info = parse_partial_signature(text, i + 1, {parse_declaration: true});
+                            if (info != null) {
+                                    // Yes, return position
+                                return i - identifier.length + 1;
+                            }
+                        } else {
+                                // All right, the identifier has a variable or function declaration
+                            return i - identifier.length + 1;
+                        }
+                    }
+                }
+                i--;
+            }
+            else if (c == ')') {
+                number_of_parens++;
+                i--;
+            }
+            else if (c == '}') {
+                number_of_braces++;
+                i--;
+            }
+            else if (c == ']') {
+                number_of_brackets++;
+                i--;
+            }
+            else if (c == '{') {
+                if (number_of_braces == 0) {
+                    number_of_unclosed_braces++;
+                }
+                else {
+                    number_of_braces--;
+                }
+                i--;
+            }
+            else if (c == '(') {
+                if (number_of_parens > 0) {
+                    number_of_parens--;
+                }
+                else {
+                    number_of_unclosed_parens++;
+                }
+                i--;
+            }
+            else if (number_of_parens == 0 && c == '>' && text.charAt(i - 1) != '-') {
+                number_of_lts++;
+                i--;
+            }
+            else if (number_of_parens == 0 && c == '<') {
+                if (number_of_lts > 0) {
+                    number_of_lts--;
+                } else {
+                    number_of_unclosed_lts++;
+                }
+                i--;
+            }
+            else if (c == '[') {
+                if (number_of_brackets > 0) {
+                    number_of_brackets--;
+                } else {
+                    number_of_unclosed_brackets++;
+                }
+                i--;
+            }
+            else {
+                i--;
+            }
+        }
+
+        return -1;
+    }
+
         /** Return the given code after replacing single-line/multiline comments
             and string contents with white spaces
             In other words, the output will be the same haxe code, with the same text length

@@ -69,8 +69,8 @@ class HXML {
         return args;
     }
 
-    
+
         /** Match any single/double quoted string */
-    static var REGEX_BEGINS_WITH_STRING:EReg = new EReg('^(?:"(?:[^"\\\\]*(?:\\\\.[^"\\\\]*)*)"|\'(?:[^\']*(?:\'\'[^\']*)*)\')', '');
+    static var REGEX_BEGINS_WITH_STRING:EReg = ~/^(?:"(?:[^"\\]*(?:\\.[^"\\]*)*)"|\'(?:[^\'\\]*(?:\\.[^\'\\]*)*)\')/;
 
 } //HXML

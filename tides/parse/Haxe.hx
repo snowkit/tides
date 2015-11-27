@@ -849,14 +849,14 @@ typedef HaxeParsedSignature = {
 private class RE {
 
         /** Match any single/double quoted string */
-    static var BEGINS_WITH_STRING:EReg = new EReg('^(?:"(?:[^"\\\\]*(?:\\\\.[^"\\\\]*)*)"|\'(?:[^\']*(?:\'\'[^\']*)*)\')', '');
-    static var ENDS_WITH_BEFORE_CALL_CHAR:EReg = ~/[a-zA-Z0-9_\]\)]\s*$/;
-    static var ENDS_WITH_BEFORE_SIGNATURE_CHAR:EReg = ~/[a-zA-Z0-9_>]\s*$/;
-    static var ENDS_WITH_KEY:EReg = ~/([a-zA-Z0-9_]+)\s*:$/;
-    static var ENDS_WITH_ALPHANUMERIC:EReg = ~/([a-zA-Z0-9_]+)$/;
-    static var BEGINS_WITH_KEY:EReg = ~/^([a-zA-Z0-9_]+)\s*:/;
-    static var PACKAGE:EReg = ~/^package\s*([a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*)/;
-    static var ENDS_WITH_FUNCTION_DEF:EReg = ~/[^a-zA-Z0-9_]function(?:\s+[a-zA-Z0-9_]+)?(?:<[a-zA-Z0-9_<>, ]+>)?$/;
-    static var IMPORT:EReg = ~/import\s*([a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)(?:\s+(?:in|as)\s+([a-zA-Z0-9_]+))?/g;
+    public static var BEGINS_WITH_STRING:EReg = ~/^(?:"(?:[^"\\]*(?:\\.[^"\\]*)*)"|\'(?:[^\'\\]*(?:\\.[^\'\\]*)*)\')/;
+    public static var ENDS_WITH_BEFORE_CALL_CHAR:EReg = ~/[a-zA-Z0-9_\]\)]\s*$/;
+    public static var ENDS_WITH_BEFORE_SIGNATURE_CHAR:EReg = ~/[a-zA-Z0-9_>]\s*$/;
+    public static var ENDS_WITH_KEY:EReg = ~/([a-zA-Z0-9_]+)\s*:$/;
+    public static var ENDS_WITH_ALPHANUMERIC:EReg = ~/([a-zA-Z0-9_]+)$/;
+    public static var BEGINS_WITH_KEY:EReg = ~/^([a-zA-Z0-9_]+)\s*:/;
+    public static var PACKAGE:EReg = ~/^package\s*([a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*)/;
+    public static var ENDS_WITH_FUNCTION_DEF:EReg = ~/[^a-zA-Z0-9_]function(?:\s+[a-zA-Z0-9_]+)?(?:<[a-zA-Z0-9_<>, ]+>)?$/;
+    public static var IMPORT:EReg = ~/import\s*([a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)(?:\s+(?:in|as)\s+([a-zA-Z0-9_]+))?/g;
 
 } //RE

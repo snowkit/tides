@@ -542,7 +542,7 @@ class Haxe {
             * function foo(arg1, `identifier`
             * ...
            Returns an index or -1 if nothing was found */
-    public static function find_local_declaration(text:String, identifier:String, index:Int) {
+    public static function find_local_declaration(text:String, identifier:String, index:Int):Int {
 
             // Cleanup text
         text = code_with_empty_comments_and_strings(text);
@@ -649,7 +649,8 @@ class Haxe {
         }
 
         return -1;
-    }
+
+    } //find_local_declaration
 
         /** Return the given code after replacing single-line/multiline comments
             and string contents with white spaces

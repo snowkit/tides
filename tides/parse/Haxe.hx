@@ -1,5 +1,7 @@
 package tides.parse;
 
+import haxe.DynamicAccess;
+
 using StringTools;
 
 class Haxe {
@@ -921,27 +923,28 @@ class Haxe {
         /* Extract a mapping of imports
            From the given haxe code contents.
            Alias (in / as) are also parsed. */
-    public static function extract_imports(input:String):Dynamic {
+    public static function extract_imports(input:String):DynamicAccess<Dynamic> {
 
             // Cleanup input
         input = code_with_empty_comments_and_strings(input);
 
-        var imports:Dynamic = {};
+        var imports:DynamicAccess<Dynamic> = {};
 
             // Run regexp
         RE.IMPORT.map(input, function(regex:EReg):String {
             var match1 = regex.matched(1);
             var match2 = regex.matched(2);
             if (match2 != null) {
-                Reflect.setField(imports, match2, match1);
+                imports.set(match2, match1);
             } else {
-                Reflect.setField(imports, match1, match1);
+                imports.set(match1, match1);
             }
             return '';
         });
 
         return imports;
-    }
+
+    } //extract_imports
 
 } //Haxe
 

@@ -946,6 +946,58 @@ class Haxe {
 
     } //extract_imports
 
+        /* Extract a package (as string)
+           From the given haxe code contents.
+           Default package will be an empty string */
+    public static function extract_package(input:String):String {
+
+        var i = 0;
+        var len = input.length;
+        var is_in_single_line_comment = false;
+        var is_in_multiline_comment = false;
+        var matches;
+
+        while (i < len) {
+
+            if (is_in_single_line_comment) {
+                if (input.charAt(i) == "\n") {
+                    is_in_single_line_comment = false;
+                }
+                i++;
+            }
+            else if (is_in_multiline_comment) {
+                if (input.substr(i, 2) == '*/') {
+                    is_in_multiline_comment = false;
+                    i += 2;
+                }
+                else {
+                    i++;
+                }
+            }
+            else if (input.substr(i, 2) == '//') {
+                is_in_single_line_comment = true;
+                i += 2;
+            }
+            else if (input.substr(i, 2) == '/*') {
+                is_in_multiline_comment = true;
+                i += 2;
+            }
+            else if (input.charAt(i).trim() == '') {
+                i++;
+            }
+            else if (RE.PACKAGE.match(input.substring(i))) {
+                return RE.PACKAGE.matched(1);
+            }
+            else {
+                    // Something that is neither a comment or a package token shown up.
+                    // We are done
+                return '';
+            }
+        }
+
+        return '';
+
+    } //extract_package
 } //Haxe
 
 

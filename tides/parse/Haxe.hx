@@ -871,7 +871,7 @@ typedef HaxeParsedSignature = {
 private class RE {
 
         /** Match any single/double quoted string */
-    public static var BEGINS_WITH_STRING:EReg = ~/^(?:"(?:[^"\\]*(?:\\.[^"\\]*)*)"|\'(?:[^\'\\]*(?:\\.[^\'\\]*)*)\')/;
+    public static var BEGINS_WITH_STRING:EReg = ~/^(?:"(?:[^"\\]*(?:\\.[^"\\]*)*)"|'(?:[^'\\]*(?:\\.[^'\\]*)*)')/;
     public static var BEGINS_WITH_REGEX:EReg = ~/^~\/(?:[^\/\\]*(?:\\.[^\/\\]*)*)\//;
     public static var ENDS_WITH_BEFORE_CALL_CHAR:EReg = ~/[a-zA-Z0-9_\]\)]\s*$/;
     public static var ENDS_WITH_BEFORE_SIGNATURE_CHAR:EReg = ~/[a-zA-Z0-9_>]\s*$/;

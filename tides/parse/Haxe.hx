@@ -847,6 +847,76 @@ class Haxe {
         return index + len - 1;
 
     } //index_of_closest_block
+
+        /** Extract end of expression at the given index */
+    public static function parse_end_of_expression(text:String, index:Int):String {
+        if (index == null) index = 0;
+
+            // Cleanup text
+        var original_text = text;
+        text = code_with_empty_comments_and_strings(text.substring(index));
+
+        var i = 0;
+        var len = text.length;
+        var number_of_parens = 0;
+        var m, c;
+        var result = '';
+
+        while (i < len) {
+            c = text.charAt(i);
+
+            if (c == '(') {
+                if (RE.ENDS_WITH_BEFORE_CALL_CHAR.match(original_text.substring(0, index + i))) {
+                    result += c;
+                    break;
+                }
+                number_of_parens++;
+                result += c;
+                i++;
+            }
+            else if (c == ')') {
+                result += c;
+                if (number_of_parens > 0) {
+                    number_of_parens--;
+                    i++;
+                } else {
+                    break;
+                }
+            }
+            else if (c == ';') {
+                result += c;
+                if (number_of_parens > 0) {
+                    i++;
+                } else {
+                    break;
+                }
+            }
+            else if (c == ',') {
+                result += c;
+                if (number_of_parens > 0) {
+                    i++;
+                } else {
+                    break;
+                }
+            }
+            else if (c.trim() == '') {
+                result += c;
+                if (number_of_parens > 0) {
+                    i++;
+                } else {
+                    break;
+                }
+            }
+            else {
+                result += c;
+                i++;
+            }
+
+        }
+
+        return result;
+
+    } //parse_end_of_expression
 } //Haxe
 
 

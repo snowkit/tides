@@ -818,6 +818,35 @@ class Haxe {
 
     } //extract_used_keys_in_structure
 
+        /** Find the closest block starting from the given index.
+            Returns the index or -1. */
+    public static function index_of_closest_block(text:String, index:Int):Int {
+
+        if (index == null) index = 0;
+
+            // Cleanup text
+        text = code_with_empty_comments_and_strings(text.substring(index));
+
+        var i = 0;
+        var len = text.length;
+        var c;
+
+        while (i < len) {
+            c = text.charAt(i);
+
+            if (c == '}') {
+                return index + i;
+            }
+            else if (c == '{') {
+                return index + i + 1;
+            }
+
+            i++;
+        }
+
+        return index + len - 1;
+
+    } //index_of_closest_block
 } //Haxe
 
 

@@ -998,6 +998,59 @@ class Haxe {
         return '';
 
     } //extract_package
+
+        // Return the content after having detected and replaced the package name
+    public static function replace_package(input:String, new_package_name:String):String {
+
+        var i = 0;
+        var len = input.length;
+        var is_in_single_line_comment = false;
+        var is_in_multiline_comment = false;
+        var matches;
+
+        while (i < len) {
+
+            if (is_in_single_line_comment) {
+                if (input.charAt(i) == "\n") {
+                    is_in_single_line_comment = false;
+                }
+                i++;
+            }
+            else if (is_in_multiline_comment) {
+                if (input.substr(i, 2) == '*/') {
+                    is_in_multiline_comment = false;
+                    i += 2;
+                }
+                else {
+                    i++;
+                }
+            }
+            else if (input.substr(i, 2) == '//') {
+                is_in_single_line_comment = true;
+                i += 2;
+            }
+            else if (input.substr(i, 2) == '/*') {
+                is_in_multiline_comment = true;
+                i += 2;
+            }
+            else if (input.charAt(i).trim() == '') {
+                i++;
+            }
+            else if (RE.PACKAGE.match(input.substring(i))) {
+                    // Package detected. Replace it
+                return input.substring(0, i) + 'package ' + new_package_name + input.substring(i + RE.PACKAGE.matched(0).length);
+            }
+            else {
+                    // Something that is neither a comment or a package token shown up.
+                    // No package in this file. Add the package at the beginning of the contents
+                return "package " + new_package_name + ";\n" + input;
+            }
+        }
+
+            // No package in this file. Add the package at the beginning of the contents
+        return "package " + new_package_name + ";\n" + input;
+    }
+
 } //Haxe
 
 

@@ -653,7 +653,7 @@ class Haxe {
     } //find_local_declaration
 
         /** Return the given code after replacing single-line/multiline comments
-            and string contents with white spaces
+            and string contents with white spaces. Also replaces strings in regex format (~/.../).
             In other words, the output will be the same haxe code, with the same text length
             but strings will be only composed of spaces and comments completely replaced with spaces
             Use this method to simplify later parsing of the code and/or make it more efficient
@@ -720,6 +720,27 @@ class Haxe {
                 else {
                         // Input finishes with non terminated string
                         // In that case, remove the partial string and put spaces
+                    while (i < len) {
+                        output += ' ';
+                        i++;
+                    }
+                }
+            }
+            else if (input.charAt(i) == '~') {
+                if (RE.BEGINS_WITH_REGEX.match(input.substring(i))) {
+                    var match_len = RE.BEGINS_WITH_STRING.matched(0).length;
+                    output += '~/';
+                    k = 1;
+                    while (k < match_len - 2) {
+                        output += ' ';
+                        k++;
+                    }
+                    output += '/';
+                    i += match_len;
+                }
+                else {
+                        // Input finishes with non terminated regex
+                        // In that case, remove the partial regex and put spaces
                     while (i < len) {
                         output += ' ';
                         i++;
@@ -851,6 +872,7 @@ private class RE {
 
         /** Match any single/double quoted string */
     public static var BEGINS_WITH_STRING:EReg = ~/^(?:"(?:[^"\\]*(?:\\.[^"\\]*)*)"|\'(?:[^\'\\]*(?:\\.[^\'\\]*)*)\')/;
+    public static var BEGINS_WITH_REGEX:EReg = ~/^~\/(?:[^\/\\]*(?:\\.[^\/\\]*)*)\//;
     public static var ENDS_WITH_BEFORE_CALL_CHAR:EReg = ~/[a-zA-Z0-9_\]\)]\s*$/;
     public static var ENDS_WITH_BEFORE_SIGNATURE_CHAR:EReg = ~/[a-zA-Z0-9_>]\s*$/;
     public static var ENDS_WITH_KEY:EReg = ~/([a-zA-Z0-9_]+)\s*:$/;

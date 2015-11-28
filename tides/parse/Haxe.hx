@@ -917,6 +917,32 @@ class Haxe {
         return result;
 
     } //parse_end_of_expression
+
+        /* Extract a mapping of imports
+           From the given haxe code contents.
+           Alias (in / as) are also parsed. */
+    public static function extract_imports(input:String):Dynamic {
+
+            // Cleanup input
+        input = code_with_empty_comments_and_strings(input);
+
+        var imports:Dynamic = {};
+
+            // Run regexp
+        RE.IMPORT.map(input, function(regex:EReg):String {
+            var match1 = regex.matched(1);
+            var match2 = regex.matched(2);
+            if (match2 != null) {
+                Reflect.setField(imports, match2, match1);
+            } else {
+                Reflect.setField(imports, match1, match1);
+            }
+            return '';
+        });
+
+        return imports;
+    }
+
 } //Haxe
 
 

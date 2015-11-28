@@ -999,7 +999,7 @@ class Haxe {
 
     } //extract_package
 
-        // Return the content after having detected and replaced the package name
+        /* Return the content after having detected and replaced the package name */
     public static function replace_package(input:String, new_package_name:String):String {
 
         var i = 0;
@@ -1049,7 +1049,8 @@ class Haxe {
 
             // No package in this file. Add the package at the beginning of the contents
         return "package " + new_package_name + ";\n" + input;
-    }
+
+    } //replace_package
 
 } //Haxe
 

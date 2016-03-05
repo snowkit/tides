@@ -1,0 +1,4 @@
+-main Tests
+-x run_tests
+-lib mohxa
+-lib tides

@@ -1,9 +1,9 @@
-Haxe `T`ools for `IDE` `S`upport 
+Haxe `T`ools for `IDE` `S`upport
 
 ### What is tides?
 
 A collection of shared tools, utilities and structures,   
-that have become common across multiple Haxe IDE plugins (like atom and sublime). 
+that have become common across multiple Haxe IDE plugins (like atom and sublime).
 
 ### Why?
 
@@ -31,6 +31,14 @@ This is specifically a shared, standalone dependency that can be used by IDE plu
   - sublime ~~externs~~, ~~empty package~~
 - Migrating existing code from atom and sublime to tides
 - See the issue list for fuller milestones and details
+
+### Running the tests
+
+Make sure `tides` is set as a haxelib.
+
+`haxelib install mohxa`
+`cd tests/`
+`haxe build.hxml`
 
 ### History
 

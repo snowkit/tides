@@ -1239,6 +1239,6 @@ private class RE {
     public static var ENDS_WITH_FUNCTION_DEF:EReg = ~/[^a-zA-Z0-9_]function(?:\s+[a-zA-Z0-9_]+)?(?:<[a-zA-Z0-9_<>, ]+>)?$/;
     public static var ENDS_WITH_FUNCTION_KEYWORD:EReg = ~/[^a-zA-Z0-9_]function\s*$/;
     public static var IMPORT:EReg = ~/import\s*([a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)(?:\s+(?:in|as)\s+([a-zA-Z0-9_]+))?/g;
-    public static var HAXE_COMPILER_OUTPUT_LINE:EReg = ~/^\s*(.+)?(?=\\:[0-9]*\\:)\\:([0-9]+)\\:\s+(characters|lines)\s+([0-9]+)\-([0-9]+)(?:\s+\\:\s*(.*?))?\s*$/;
+    public static var HAXE_COMPILER_OUTPUT_LINE:EReg = ~/^\s*(.+)?(?=:[0-9]*:):([0-9]+):\s+(characters|lines)\s+([0-9]+)\-([0-9]+)(?:\s+:\s*(.*?))?\s*$/;
 
 } //RE

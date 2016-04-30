@@ -2,6 +2,8 @@ package tides.parse;
 
 import haxe.DynamicAccess;
 
+import haxe.io.Path;
+
 using StringTools;
 
 class Haxe {
@@ -1059,6 +1061,97 @@ class Haxe {
 
     } //replace_package
 
+        /** Parse haxe compiler output and extract info */
+    public static function parse_compiler_output(output:String, ?options:ParseCompilerOutputOptions):Array<HaxeCompilerOutputElement> {
+
+        if (options == null) {
+            options = {};
+        }
+
+        var info:Array<HaxeCompilerOutputElement> = [];
+        var prev_info = null;
+        var lines = output.split("\n");
+        var cwd = options.cwd;
+        var line, line_str, file_path, location, start, end, message;
+        var re = RE.HAXE_COMPILER_OUTPUT_LINE;
+
+        for (i in 0...lines.length) {
+
+            line_str = lines[i];
+
+            if (info.length > 0) {
+                prev_info = info[info.length - 1];
+            }
+
+            if (re.match(line_str)) {
+
+                file_path = re.matched(1);
+                line = Std.parseInt(re.matched(2));
+                location = re.matched(3);
+                start = Std.parseInt(re.matched(4));
+                end = Std.parseInt(re.matched(5));
+                message = re.matched(6);
+
+                if (message != null || options.allow_empty_message) {
+
+                        // Make file_path absolute if possible
+                    if (cwd != null && !Path.isAbsolute(file_path)) {
+                        file_path = Path.join([cwd, file_path]);
+                    }
+
+                    if (message != null
+                        && prev_info != null
+                        && prev_info.message != null
+                        && prev_info.file_path == file_path
+                        && prev_info.location == location
+                        && prev_info.line == line
+                        && prev_info.start == start
+                        && prev_info.end == end) {
+                            // Concatenate multiline message
+                        prev_info.message += "\n" + message;
+                    }
+                    else {
+                        info.push({
+                            line: line,
+                            file_path: file_path,
+                            location: location,
+                            start: start,
+                            end: end,
+                            message: message
+                        });
+                    }
+                }
+            }
+        } //for lines
+
+            // Prevent duplicate messages as this can happen, like multiple `Unexpected (` at the same location
+            // We may want to remove this snippet in a newer haxe compiler version if the output is never duplicated anymore
+        for (i in 0...info.length) {
+            message = info[i].message;
+            if (message != null) {
+                var message_lines = message.split("\n");
+                var all_lines_are_equal = true;
+                if (message_lines.length > 1) {
+                    line_str = message_lines[0];
+                    for (l in 0...message_lines.length) {
+                        if (line_str != message_lines[l]) {
+                            all_lines_are_equal = false;
+                            break;
+                        }
+                        line_str = message_lines[l];
+                    }
+                        // If all lines of message are equal, just keep one line
+                    if (all_lines_are_equal) {
+                        info[i].message = line_str;
+                    }
+                }
+            }
+        }
+
+        return info;
+
+    } //parse_compiler_output
+
 } //Haxe
 
 
@@ -1108,6 +1201,29 @@ typedef HaxeParsedSignature = {
     @:optional var used_keys:Array<String>;
 }
 
+typedef ParseCompilerOutputOptions = {
+
+    @:optional var allow_empty_message:Bool;
+
+    @:optional var cwd:String;
+}
+
+typedef HaxeCompilerOutputElement = {
+
+    var line:Int;
+
+    var file_path:String;
+
+    var location:String;
+
+    var start:Int;
+
+    var end:Int;
+
+    var message:String;
+
+}
+
 @:allow(tides.parse.Haxe)
 private class RE {
 
@@ -1123,5 +1239,6 @@ private class RE {
     public static var ENDS_WITH_FUNCTION_DEF:EReg = ~/[^a-zA-Z0-9_]function(?:\s+[a-zA-Z0-9_]+)?(?:<[a-zA-Z0-9_<>, ]+>)?$/;
     public static var ENDS_WITH_FUNCTION_KEYWORD:EReg = ~/[^a-zA-Z0-9_]function\s*$/;
     public static var IMPORT:EReg = ~/import\s*([a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)(?:\s+(?:in|as)\s+([a-zA-Z0-9_]+))?/g;
+    public static var HAXE_COMPILER_OUTPUT_LINE:EReg = ~/^\s*(.+)?(?=\\:[0-9]*\\:)\\:([0-9]+)\\:\s+(characters|lines)\s+([0-9]+)\-([0-9]+)(?:\s+\\:\s*(.*?))?\s*$/;
 
 } //RE

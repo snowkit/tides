@@ -317,16 +317,11 @@ class Haxe {
 
     } //string_from_parsed_type
 
-        /** Try to match a partial function call or declaration from the given
-            text and index position and return info if succeeded or null.
-            Default behavior is to parse function call only.
-            If an options argument is given with a `parse_declaration` key to true,
-            it will instead only accept a signature which is a declaration (like `function foo(a:T, b|)`) */
-    public static function parse_partial_signature(original_text:String, index:Int, ?options:ParsePartialSignatureOptions) {
+        /** Try to match a partial function call, declaration, or structure/variable assign
+            from the given text and cursor index position and return info. */
+    public static function parse_position_info(original_text:String, index:Int) {
             // Cleanup text
         var text = code_with_empty_comments_and_strings(original_text.substring(0, index));
-
-        if (options == null) options = {};
 
         var i = index - 1;
         var number_of_args = 0;
@@ -338,17 +333,20 @@ class Haxe {
         var number_of_unclosed_braces = 0;
         var number_of_unclosed_lts = 0;
         var number_of_unclosed_brackets = 0;
-        var signature_start = -1;
+        var paren_start = -1;
+        var brace_start = -1;
+        var assign_start = -1;
         var did_extract_used_keys = false;
         var c, arg;
         var partial_arg = null;
+        var position_kind = UNKNOWN;
 
             // A key path will be detected when giving
-            // anonymous structure as argument. The key path will allow to
+            // anonymous structure as argument or assigning it. The key path will allow to
             // know exactly which key or value we are currently writing.
             // Coupled with typedefs, it can allow to compute suggestions for
             // anonymous structure keys and values
-        var can_set_colon_index = !options.parse_declaration;
+        var can_set_colon_index = true;
         var colon_index = -1;
         var key_path = [];
         var used_keys = [];
@@ -397,33 +395,32 @@ class Haxe {
                 i--;
             }
             else if (c == '{') {
+                brace_start = i;
                 if (number_of_braces == 0) {
                         // Reset number of arguments because we found that
                         // all the already parsed text is inside an unclosed brace token
                     number_of_args = 0;
                     number_of_unclosed_braces++;
 
-                    if (!options.parse_declaration) {
-                        can_set_colon_index = true;
+                    can_set_colon_index = true;
 
-                        if (!did_extract_used_keys) {
-                                // Extract already used keys
-                            used_keys = extract_used_keys_in_structure(text.substring(i+1));
-                            did_extract_used_keys = true;
-                        }
+                    if (!did_extract_used_keys) {
+                            // Extract already used keys
+                        used_keys = extract_used_keys_in_structure(text.substring(i+1));
+                        did_extract_used_keys = true;
+                    }
 
-                            // Match key
-                        if (colon_index != -1) {
-                            if (RE.ENDS_WITH_KEY.match(text.substring(0, colon_index + 1))) {
-                                key_path.unshift(RE.ENDS_WITH_KEY.matched(1));
-                            }
+                        // Match key
+                    if (colon_index != -1) {
+                        if (RE.ENDS_WITH_KEY.match(text.substring(0, colon_index + 1))) {
+                            key_path.unshift(RE.ENDS_WITH_KEY.matched(1));
                         }
-                        else if (key_path.length == 0) {
-                            if (RE.ENDS_WITH_ALPHANUMERIC.match(text.substring(0, index))) {
-                                partial_key = RE.ENDS_WITH_ALPHANUMERIC.matched(1);
-                            } else {
-                                partial_key = '';
-                            }
+                    }
+                    else if (key_path.length == 0) {
+                        if (RE.ENDS_WITH_ALPHANUMERIC.match(text.substring(0, index))) {
+                            partial_key = RE.ENDS_WITH_ALPHANUMERIC.matched(1);
+                        } else {
+                            partial_key = '';
                         }
                     }
                 }
@@ -433,31 +430,43 @@ class Haxe {
                 i--;
             }
             else if (c == '(') {
+                paren_start = i;
                 if (number_of_parens > 0) {
                     number_of_parens--;
 
                         // Ensure the unclosed brace is not a function body
                     if (number_of_parens == 0 && number_of_unclosed_braces > 0 && RE.ENDS_WITH_FUNCTION_KEYWORD.match(text.substring(0, i))) {
                             // In that case, this is not an anonymous structure
-                        return null;
+                        break;
                     }
 
                     i--;
                 }
                 else {
-                    if ((!options.parse_declaration && RE.ENDS_WITH_BEFORE_CALL_CHAR.match(text.substring(0, i)))
-                    || (options.parse_declaration && RE.ENDS_WITH_BEFORE_SIGNATURE_CHAR.match(text.substring(0, i)))) {
+                    if (RE.ENDS_WITH_BEFORE_CALL_CHAR.match(text.substring(0, i))) { // Not declaration
 
                         if (RE.ENDS_WITH_FUNCTION_DEF.match(text.substring(0, i))) {
-                            if (!options.parse_declaration) {
-                                // Perform no completion on function definition signature
-                                return null;
-                            }
-                        } else if (options.parse_declaration) {
-                            return null;
+                            break;
                         }
+
+                        position_kind = FUNCTION_CALL;
                         number_of_args++;
-                        signature_start = i;
+                        paren_start = i;
+                        if (partial_arg == null) {
+                            partial_arg = original_text.substring(i + 1, index).ltrim();
+                        }
+                        break;
+                    }
+                    else if (RE.ENDS_WITH_BEFORE_SIGNATURE_CHAR.match(text.substring(0, i))) { // Declaration
+
+                        if (RE.ENDS_WITH_FUNCTION_DEF.match(text.substring(0, i))) {
+                            position_kind = FUNCTION_DECLARATION;
+                        } else {
+                            break;
+                        }
+
+                        number_of_args++;
+                        paren_start = i;
                         if (partial_arg == null) {
                             partial_arg = original_text.substring(i + 1, index).ltrim();
                         }
@@ -469,15 +478,22 @@ class Haxe {
                         number_of_args = 0;
 
                             // Reset key path also if needed
-                        if (!options.parse_declaration) {
-                            can_set_colon_index = true;
-                            colon_index = -1;
-                        }
+                        can_set_colon_index = true;
+                        colon_index = -1;
 
                         number_of_unclosed_parens++;
                         i--;
                     }
                 }
+            }
+            else if (c == '=') {
+                assign_start = i;
+
+                if (number_of_parens == 0) {
+                    break;
+                }
+
+                i--;
             }
             else if (number_of_parens == 0 && c == '>' && text.charAt(i - 1) != '-') {
                 number_of_lts++;
@@ -520,19 +536,26 @@ class Haxe {
             }
         }
 
-        if (signature_start == -1) {
-            return null;
-        }
-
-        var result:HaxeParsedSignature = {
-            signature_start: signature_start,
-            number_of_args: number_of_args
+        var result:HaxePositionInfo = {
+            kind: position_kind
         };
 
-        if (!options.parse_declaration && number_of_unclosed_braces > 0) {
-            result.key_path = key_path;
-            result.partial_key = partial_key;
-            result.used_keys = used_keys;
+        if (paren_start != -1) {
+            result.paren_start = paren_start;
+            if (result.kind != UNKNOWN) result.number_of_args = number_of_args;
+        }
+        else if (assign_start != -1) {
+            result.assign_start = assign_start;
+            result.kind = VARIABLE_ASSIGN;
+        }
+
+        if (brace_start != -1) {
+            result.brace_start = brace_start;
+            if (result.kind != FUNCTION_DECLARATION) {
+                result.key_path = key_path;
+                result.partial_key = partial_key;
+                result.used_keys = used_keys;
+            }
         }
 
             // Add partial arg, only if it is not empty and doesn't finish with spaces
@@ -559,6 +582,9 @@ class Haxe {
         text = code_with_empty_comments_and_strings(text);
 
         var i = index - 1;
+        var paren_start = -1;
+        var brace_start = -1;
+        var assign_start = -1;
         var number_of_args = 0;
         var number_of_parens = 0;
         var number_of_braces = 0;
@@ -591,8 +617,8 @@ class Haxe {
                         m = regex_identifier_decl.matched(1);
                         if (m == '(' || m == '?'  || m == ',') {
                                 // Is the identifier inside a signature? Ensure we are in a function declaration signature, not a simple call
-                            var info = parse_partial_signature(text, i + 1, {parse_declaration: true});
-                            if (info != null) {
+                            var info = parse_position_info(text, i + 1);
+                            if (info != null && info.kind == FUNCTION_DECLARATION) {
                                     // Yes, return position
                                 return i - identifier.length + 1;
                             }
@@ -815,7 +841,7 @@ class Haxe {
             else if (number_of_braces == 0 && number_of_parens == 0 && number_of_lts == 0 && number_of_brackets == 0) {
                 if (RE.BEGINS_WITH_KEY.match(cleaned_text.substring(i))) {
                     i += RE.BEGINS_WITH_KEY.matched(0).length;
-                    used_keys.push(RE.BEGINS_WITH_KEY.matched(0));
+                    used_keys.push(RE.BEGINS_WITH_KEY.matched(1));
                 }
                 else {
                     i++;
@@ -1175,30 +1201,48 @@ typedef ParsePartialSignatureOptions = {
     @:optional var parse_declaration:Bool;
 }
 
-typedef HaxeParsedSignature = {
+typedef HaxePositionInfo = {
+
+        /** Kind of parsed position info */
+    var kind:HaxePositionInfoKind;
 
         /** The position of the opening parenthesis starting
-            the function call signature */
-    var signature_start:Int;
+            the function call signature, if any */
+    @:optional var paren_start:Int;
 
         /** The number of arguments between the signature
-            start and the current position */
-    var number_of_args:Int;
-
-        /** An array of keys, in case the current position
-            is inside an anonymous structure given as argument */
-    @:optional var key_path:Array<String>;
-
-        /** A string of the key being written at the current position
-            if inside an anonymous structure given as argument */
-    @:optional var partial_key:String;
+            start and the current position, if any */
+    @:optional var number_of_args:Int;
 
         /** A string of the argument being written at the current position */
     @:optional var partial_arg:String;
 
+        /** The position of the opening brace starting
+            the anonymous structure, if any */
+    @:optional var brace_start:Int;
+
+        /** An array of keys, in case the current position
+            is inside an anonymous structure */
+    @:optional var key_path:Array<String>;
+
+        /** A string of the key being written at the current position
+            if inside an anonymous structure */
+    @:optional var partial_key:String;
+
         /** An array of keys, containing the keys already
-            being used before the current position */
+            being used before the current position, if
+            inside an anonymous structure */
     @:optional var used_keys:Array<String>;
+
+        /** The position of the equal assign operator, if any */
+    @:optional var assign_start:Int;
+}
+
+enum HaxePositionInfoKind {
+    FUNCTION_DECLARATION;
+    FUNCTION_CALL;
+    VARIABLE_ASSIGN;
+    UNKNOWN;
 }
 
 typedef ParseCompilerOutputOptions = {

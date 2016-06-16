@@ -336,6 +336,7 @@ class Haxe {
         var paren_start = -1;
         var brace_start = -1;
         var assign_start = -1;
+        var dot_start = -1;
         var did_extract_used_keys = false;
         var c, arg;
         var partial_arg = null;
@@ -352,187 +353,200 @@ class Haxe {
         var used_keys = [];
         var partial_key = null;
 
-        while (i > 0) {
-            c = text.charAt(i);
+        if (RE.ENDS_WITH_DOT_IDENTIFIER.match(text)) {
 
-            if (c == '"' || c == '\'') {
-                    // Continue until we reach the beginning of the string
-                while (i >= 0) {
-                    i--;
-                    if (text.charAt(i) == c) {
+                // Don't query haxe when writing a number containing dots
+            if (!RE.ENDS_WITH_DOT_NUMBER.match(' '+text) && !RE.ENDS_WITH_PARTIAL_PACKAGE_DECL.match(' '+text)) {
+
+                dot_start = index - RE.ENDS_WITH_DOT_IDENTIFIER.matched(1).length - 1;
+                position_kind = DOT_ACCESS;
+            }
+
+        }
+        else {
+
+            while (i > 0) {
+                c = text.charAt(i);
+
+                if (c == '"' || c == '\'') {
+                        // Continue until we reach the beginning of the string
+                    while (i >= 0) {
                         i--;
-                        break;
-                    }
-                }
-            }
-            else if (c == ',') {
-                if (number_of_parens == 0 && number_of_braces == 0 && number_of_lts == 0 && number_of_brackets == 0) {
-                    can_set_colon_index = false;
-                    number_of_args++;
-                    if (partial_arg == null) {
-                        partial_arg = original_text.substring(i + 1, index).ltrim();
-                    }
-                }
-                i--;
-            }
-            else if (c == ')') {
-                number_of_parens++;
-                i--;
-            }
-            else if (c == '}') {
-                number_of_braces++;
-                i--;
-            }
-            else if (c == ']') {
-                number_of_brackets++;
-                i--;
-            }
-            else if (c == ':') {
-                if (can_set_colon_index && number_of_braces == 0 && number_of_parens == 0 && number_of_lts == 0) {
-                    colon_index = i;
-                    can_set_colon_index = false;
-                }
-                i--;
-            }
-            else if (c == '{') {
-                brace_start = i;
-                if (number_of_braces == 0) {
-                        // Reset number of arguments because we found that
-                        // all the already parsed text is inside an unclosed brace token
-                    number_of_args = 0;
-                    number_of_unclosed_braces++;
-
-                    can_set_colon_index = true;
-
-                    if (!did_extract_used_keys) {
-                            // Extract already used keys
-                        used_keys = extract_used_keys_in_structure(text.substring(i+1));
-                        did_extract_used_keys = true;
-                    }
-
-                        // Match key
-                    if (colon_index != -1) {
-                        if (RE.ENDS_WITH_KEY.match(text.substring(0, colon_index + 1))) {
-                            key_path.unshift(RE.ENDS_WITH_KEY.matched(1));
-                        }
-                    }
-                    else if (key_path.length == 0) {
-                        if (RE.ENDS_WITH_ALPHANUMERIC.match(text.substring(0, index))) {
-                            partial_key = RE.ENDS_WITH_ALPHANUMERIC.matched(1);
-                        } else {
-                            partial_key = '';
+                        if (text.charAt(i) == c) {
+                            i--;
+                            break;
                         }
                     }
                 }
-                else {
-                    number_of_braces--;
-                }
-                i--;
-            }
-            else if (c == '(') {
-                paren_start = i;
-                if (number_of_parens > 0) {
-                    number_of_parens--;
-
-                        // Ensure the unclosed brace is not a function body
-                    if (number_of_parens == 0 && number_of_unclosed_braces > 0 && RE.ENDS_WITH_FUNCTION_KEYWORD.match(text.substring(0, i))) {
-                            // In that case, this is not an anonymous structure
-                        break;
+                else if (c == ',') {
+                    if (number_of_parens == 0 && number_of_braces == 0 && number_of_lts == 0 && number_of_brackets == 0) {
+                        can_set_colon_index = false;
+                        number_of_args++;
+                        if (partial_arg == null) {
+                            partial_arg = original_text.substring(i + 1, index).ltrim();
+                        }
                     }
-
                     i--;
                 }
-                else {
-                    if (RE.ENDS_WITH_BEFORE_CALL_CHAR.match(text.substring(0, i))) { // Not declaration
-
-                        if (RE.ENDS_WITH_FUNCTION_DEF.match(text.substring(0, i))) {
-                            break;
-                        }
-
-                        position_kind = FUNCTION_CALL;
-                        number_of_args++;
-                        paren_start = i;
-                        if (partial_arg == null) {
-                            partial_arg = original_text.substring(i + 1, index).ltrim();
-                        }
-                        break;
+                else if (c == ')') {
+                    number_of_parens++;
+                    i--;
+                }
+                else if (c == '}') {
+                    number_of_braces++;
+                    i--;
+                }
+                else if (c == ']') {
+                    number_of_brackets++;
+                    i--;
+                }
+                else if (c == ':') {
+                    if (can_set_colon_index && number_of_braces == 0 && number_of_parens == 0 && number_of_lts == 0) {
+                        colon_index = i;
+                        can_set_colon_index = false;
                     }
-                    else if (RE.ENDS_WITH_BEFORE_SIGNATURE_CHAR.match(text.substring(0, i))) { // Declaration
+                    i--;
+                }
+                else if (c == '{') {
+                    brace_start = i;
+                    if (number_of_braces == 0) {
+                            // Reset number of arguments because we found that
+                            // all the already parsed text is inside an unclosed brace token
+                        number_of_args = 0;
+                        number_of_unclosed_braces++;
 
-                        if (RE.ENDS_WITH_FUNCTION_DEF.match(text.substring(0, i))) {
-                            position_kind = FUNCTION_DECLARATION;
-                        } else {
-                            break;
+                        can_set_colon_index = true;
+
+                        if (!did_extract_used_keys) {
+                                // Extract already used keys
+                            used_keys = extract_used_keys_in_structure(text.substring(i+1));
+                            did_extract_used_keys = true;
                         }
 
-                        number_of_args++;
-                        paren_start = i;
-                        if (partial_arg == null) {
-                            partial_arg = original_text.substring(i + 1, index).ltrim();
+                            // Match key
+                        if (colon_index != -1) {
+                            if (RE.ENDS_WITH_KEY.match(text.substring(0, colon_index + 1))) {
+                                key_path.unshift(RE.ENDS_WITH_KEY.matched(1));
+                            }
                         }
-                        break;
+                        else if (key_path.length == 0) {
+                            if (RE.ENDS_WITH_ALPHANUMERIC.match(text.substring(0, index))) {
+                                partial_key = RE.ENDS_WITH_ALPHANUMERIC.matched(1);
+                            } else {
+                                partial_key = '';
+                            }
+                        }
                     }
                     else {
+                        number_of_braces--;
+                    }
+                    i--;
+                }
+                else if (c == '(') {
+                    paren_start = i;
+                    if (number_of_parens > 0) {
+                        number_of_parens--;
+
+                            // Ensure the unclosed brace is not a function body
+                        if (number_of_parens == 0 && number_of_unclosed_braces > 0 && RE.ENDS_WITH_FUNCTION_KEYWORD.match(text.substring(0, i))) {
+                                // In that case, this is not an anonymous structure
+                            break;
+                        }
+
+                        i--;
+                    }
+                    else {
+                        if (RE.ENDS_WITH_BEFORE_CALL_CHAR.match(text.substring(0, i))) { // Not declaration
+
+                            if (RE.ENDS_WITH_FUNCTION_DEF.match(text.substring(0, i))) {
+                                break;
+                            }
+
+                            position_kind = FUNCTION_CALL;
+                            number_of_args++;
+                            paren_start = i;
+                            if (partial_arg == null) {
+                                partial_arg = original_text.substring(i + 1, index).ltrim();
+                            }
+                            break;
+                        }
+                        else if (RE.ENDS_WITH_BEFORE_SIGNATURE_CHAR.match(text.substring(0, i))) { // Declaration
+
+                            if (RE.ENDS_WITH_FUNCTION_DEF.match(text.substring(0, i))) {
+                                position_kind = FUNCTION_DECLARATION;
+                            } else {
+                                break;
+                            }
+
+                            number_of_args++;
+                            paren_start = i;
+                            if (partial_arg == null) {
+                                partial_arg = original_text.substring(i + 1, index).ltrim();
+                            }
+                            break;
+                        }
+                        else {
+                                // Reset number of arguments because we found that
+                                // all the already parsed text is inside an unclosed paren token
+                            number_of_args = 0;
+
+                                // Reset key path also if needed
+                            can_set_colon_index = true;
+                            colon_index = -1;
+
+                            number_of_unclosed_parens++;
+                            i--;
+                        }
+                    }
+                }
+                else if (c == '=') {
+                    assign_start = i;
+
+                    if (number_of_parens == 0) {
+                        break;
+                    }
+
+                    i--;
+                }
+                else if (number_of_parens == 0 && c == '>' && text.charAt(i - 1) != '-') {
+                    number_of_lts++;
+                    i--;
+                }
+                else if (number_of_parens == 0 && c == '<') {
+                    if (number_of_lts > 0) {
+                        number_of_lts--;
+                    } else {
                             // Reset number of arguments because we found that
-                            // all the already parsed text is inside an unclosed paren token
+                            // all the already parsed text is inside an unclosed lower-than token
                         number_of_args = 0;
 
                             // Reset key path also if needed
                         can_set_colon_index = true;
                         colon_index = -1;
 
-                        number_of_unclosed_parens++;
-                        i--;
+                        number_of_unclosed_lts++;
                     }
+                    i--;
                 }
-            }
-            else if (c == '=') {
-                assign_start = i;
+                else if (c == '[') {
+                    if (number_of_brackets > 0) {
+                        number_of_brackets--;
+                    } else {
+                            // Reset number of arguments because we found that
+                            // all the already parsed text is inside an unclosed lower-than token
+                        number_of_args = 0;
 
-                if (number_of_parens == 0) {
-                    break;
+                            // Reset key path also if needed
+                        can_set_colon_index = true;
+                        colon_index = -1;
+
+                        number_of_unclosed_brackets++;
+                    }
+                    i--;
                 }
-
-                i--;
-            }
-            else if (number_of_parens == 0 && c == '>' && text.charAt(i - 1) != '-') {
-                number_of_lts++;
-                i--;
-            }
-            else if (number_of_parens == 0 && c == '<') {
-                if (number_of_lts > 0) {
-                    number_of_lts--;
-                } else {
-                        // Reset number of arguments because we found that
-                        // all the already parsed text is inside an unclosed lower-than token
-                    number_of_args = 0;
-
-                        // Reset key path also if needed
-                    can_set_colon_index = true;
-                    colon_index = -1;
-
-                    number_of_unclosed_lts++;
+                else {
+                    i--;
                 }
-                i--;
-            }
-            else if (c == '[') {
-                if (number_of_brackets > 0) {
-                    number_of_brackets--;
-                } else {
-                        // Reset number of arguments because we found that
-                        // all the already parsed text is inside an unclosed lower-than token
-                    number_of_args = 0;
-
-                        // Reset key path also if needed
-                    can_set_colon_index = true;
-                    colon_index = -1;
-
-                    number_of_unclosed_brackets++;
-                }
-                i--;
-            }
-            else {
-                i--;
             }
         }
 
@@ -547,6 +561,9 @@ class Haxe {
         else if (assign_start != -1) {
             result.assign_start = assign_start;
             result.kind = VARIABLE_ASSIGN;
+        }
+        else if (dot_start != -1) {
+            result.dot_start = dot_start;
         }
 
         if (brace_start != -1) {
@@ -1236,12 +1253,16 @@ typedef HaxePositionInfo = {
 
         /** The position of the equal assign operator, if any */
     @:optional var assign_start:Int;
+
+        /** The position of the dot, if any */
+    @:optional var dot_start:Int;
 }
 
 enum HaxePositionInfoKind {
     FUNCTION_DECLARATION;
     FUNCTION_CALL;
     VARIABLE_ASSIGN;
+    DOT_ACCESS;
     UNKNOWN;
 }
 
@@ -1277,12 +1298,15 @@ private class RE {
     public static var ENDS_WITH_BEFORE_CALL_CHAR:EReg = ~/[a-zA-Z0-9_\]\)]\s*$/;
     public static var ENDS_WITH_BEFORE_SIGNATURE_CHAR:EReg = ~/[a-zA-Z0-9_>]\s*$/;
     public static var ENDS_WITH_KEY:EReg = ~/([a-zA-Z0-9_]+)\s*:$/;
-    public static var ENDS_WITH_ALPHANUMERIC:EReg = ~/([a-zA-Z0-9_]+)$/;
+    public static var ENDS_WITH_ALPHANUMERIC:EReg = ~/([A-Za-z0-9_]+)$/;
     public static var BEGINS_WITH_KEY:EReg = ~/^([a-zA-Z0-9_]+)\s*:/;
     public static var PACKAGE:EReg = ~/^package\s*([a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*)/;
     public static var ENDS_WITH_FUNCTION_DEF:EReg = ~/[^a-zA-Z0-9_]function(?:\s+[a-zA-Z0-9_]+)?(?:<[a-zA-Z0-9_<>, ]+>)?$/;
     public static var ENDS_WITH_FUNCTION_KEYWORD:EReg = ~/[^a-zA-Z0-9_]function\s*$/;
     public static var IMPORT:EReg = ~/import\s*([a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)(?:\s+(?:in|as)\s+([a-zA-Z0-9_]+))?/g;
     public static var HAXE_COMPILER_OUTPUT_LINE:EReg = ~/^\s*(.+)?(?=:[0-9]*:):([0-9]+):\s+(characters|lines)\s+([0-9]+)\-([0-9]+)(?:\s+:\s*(.*?))?\s*$/;
+    public static var ENDS_WITH_DOT_IDENTIFIER:EReg = ~/\.([a-zA-Z_0-9]*)$/;
+    public static var ENDS_WITH_DOT_NUMBER:EReg = ~/[^a-zA-Z0-9_\]\)]([\.0-9]+)$/;
+    public static var ENDS_WITH_PARTIAL_PACKAGE_DECL:EReg = ~/[^a-zA-Z0-9_]package\s+([a-zA-Z_0-9]+(\.[a-zA-Z_0-9]+)*)\.([a-zA-Z_0-9]*)$/;
 
 } //RE

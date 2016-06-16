@@ -317,6 +317,7 @@ class Haxe {
 
     } //string_from_parsed_type
 
+        // TODO detect false positive on assign = inside <=, >= or ==
         /** Try to match a partial function call, declaration, or structure/variable assign
             from the given text and cursor index position and return info. */
     public static function parse_position_info(original_text:String, index:Int) {

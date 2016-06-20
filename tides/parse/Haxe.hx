@@ -342,6 +342,8 @@ class Haxe {
         var c, arg;
         var partial_arg = null;
         var position_kind = UNKNOWN;
+        var keyword = null;
+        var keyword_start = -1;
 
             // A key path will be detected when giving
             // anonymous structure as argument or assigning it. The key path will allow to
@@ -457,7 +459,13 @@ class Haxe {
                         i--;
                     }
                     else {
-                        if (RE.ENDS_WITH_BEFORE_CALL_CHAR.match(text.substring(0, i))) { // Not declaration
+
+                        if (RE.ENDS_WITH_KEYWORD.match(text.substring(0, i))) {
+                            keyword = RE.ENDS_WITH_KEYWORD.matched(1);
+                            keyword_start = index - RE.ENDS_WITH_KEYWORD.matched(0).length;
+                        }
+
+                        if (keyword == null && RE.ENDS_WITH_BEFORE_CALL_CHAR.match(text.substring(0, i))) { // Not declaration
 
                             if (RE.ENDS_WITH_FUNCTION_DEF.match(text.substring(0, i))) {
                                 break;
@@ -471,7 +479,7 @@ class Haxe {
                             }
                             break;
                         }
-                        else if (RE.ENDS_WITH_BEFORE_SIGNATURE_CHAR.match(text.substring(0, i))) { // Declaration
+                        else if (keyword == null && RE.ENDS_WITH_BEFORE_SIGNATURE_CHAR.match(text.substring(0, i))) { // Declaration
 
                             if (RE.ENDS_WITH_FUNCTION_DEF.match(text.substring(0, i))) {
                                 position_kind = FUNCTION_DECLARATION;
@@ -579,6 +587,25 @@ class Haxe {
             // Add partial arg, only if it is not empty and doesn't finish with spaces
         if (partial_arg != null && partial_arg.length > 0 && partial_arg.trim().length == partial_arg.length) {
             result.partial_arg = partial_arg;
+        }
+
+            // Parse identifier/prefix position, if any
+        if (RE.ENDS_WITH_IDENTIFIER.match(text)) {
+            var identifier = RE.ENDS_WITH_IDENTIFIER.matched(1);
+            result.identifier_start = index - identifier.length;
+            result.identifier = identifier;
+        }
+
+            // Control keyword
+        if (keyword != null) {
+            result.keyword = keyword;
+            result.keyword_start = keyword_start;
+        }
+        else if (result.kind == UNKNOWN) {
+            if (RE.ENDS_WITH_KEYWORD.match(text.substring(0, index))) {
+                result.keyword = RE.ENDS_WITH_KEYWORD.matched(1);
+                result.keyword_start = index - RE.ENDS_WITH_KEYWORD.matched(0).length;
+            }
         }
 
         return result;
@@ -1257,6 +1284,18 @@ typedef HaxePositionInfo = {
 
         /** The position of the dot, if any */
     @:optional var dot_start:Int;
+
+        /** The identifier/prefix, if any */
+    @:optional var identifier:String;
+
+        /** The position of the identifier/prefix, if any */
+    @:optional var identifier_start:Int;
+
+        /** The keyword, if any */
+    @:optional var keyword:String;
+
+        /** The keyword start, if any */
+    @:optional var keyword_start:Int;
 }
 
 enum HaxePositionInfoKind {
@@ -1296,6 +1335,7 @@ private class RE {
         /** Match any single/double quoted string */
     public static var BEGINS_WITH_STRING:EReg = ~/^(?:"(?:[^"\\]*(?:\\.[^"\\]*)*)"|'(?:[^'\\]*(?:\\.[^'\\]*)*)')/;
     public static var BEGINS_WITH_REGEX:EReg = ~/^~\/(?:[^\/\\]*(?:\\.[^\/\\]*)*)\//;
+    public static var ENDS_WITH_KEYWORD:EReg = ~/(untyped|cast|break|case|catch|continue|do|else|finally|for|in|if|import|from|package|return|switch|throw|try|while|with|class|enum|function|interface|typedef|abstractextends|implements|private|protected|public|static|dynamic|override|inline|macro)\s*$/;
     public static var ENDS_WITH_BEFORE_CALL_CHAR:EReg = ~/[a-zA-Z0-9_\]\)]\s*$/;
     public static var ENDS_WITH_BEFORE_SIGNATURE_CHAR:EReg = ~/[a-zA-Z0-9_>]\s*$/;
     public static var ENDS_WITH_KEY:EReg = ~/([a-zA-Z0-9_]+)\s*:$/;
@@ -1307,6 +1347,7 @@ private class RE {
     public static var IMPORT:EReg = ~/import\s*([a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)(?:\s+(?:in|as)\s+([a-zA-Z0-9_]+))?/g;
     public static var HAXE_COMPILER_OUTPUT_LINE:EReg = ~/^\s*(.+)?(?=:[0-9]*:):([0-9]+):\s+(characters|lines)\s+([0-9]+)\-([0-9]+)(?:\s+:\s*(.*?))?\s*$/;
     public static var ENDS_WITH_DOT_IDENTIFIER:EReg = ~/\.([a-zA-Z_0-9]*)$/;
+    public static var ENDS_WITH_IDENTIFIER:EReg = ~/([a-zA-Z_0-9]+)$/;
     public static var ENDS_WITH_DOT_NUMBER:EReg = ~/[^a-zA-Z0-9_\]\)]([\.0-9]+)$/;
     public static var ENDS_WITH_PARTIAL_PACKAGE_DECL:EReg = ~/[^a-zA-Z0-9_]package\s+([a-zA-Z_0-9]+(\.[a-zA-Z_0-9]+)*)\.([a-zA-Z_0-9]*)$/;
 

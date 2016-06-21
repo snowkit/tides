@@ -75,7 +75,8 @@ class Haxe {
                         item.composed_type.type = item.type;
                     }
 
-                    if (item.composed_type != null) {
+                    if (item.composed_type != null
+                        && (item.composed_type.type != item.type || item.type == null)) {
                         item.composed_type.composed_type = item.composed_type;
                     }
 

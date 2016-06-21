@@ -30,13 +30,6 @@ class Haxe {
                 i: 0, // index
                 stop: null // the character that stopped the last recursive call
             };
-
-                // Remove potential references to temporary package
-                // TODO:
-                //   if using tmp file method to perform autocomplete,
-                //   remove the atom_tempfile__ references directly on the
-                //   tmp file code instead. Removing it here is "too late"
-            //raw_composed_type = raw_composed_type.split('atom_tempfile__.').join('');
         }
 
             // Iterate over each characters and parse groups recursively

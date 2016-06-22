@@ -311,10 +311,36 @@ class Haxe {
 
     } //string_from_parsed_type
 
+    public static function parse_position(position_string:String):HaxePosition {
+
+        if (RE.HAXE_POSITION.match(position_string)) {
+
+            var position:HaxePosition = {};
+
+            position.file = RE.HAXE_POSITION.matched(1);
+            position.line = Std.parseInt(RE.HAXE_POSITION.matched(2));
+
+            if (RE.HAXE_POSITION.matched(3) == 'characters') {
+
+                position.characters = [
+                    Std.parseInt(RE.HAXE_POSITION.matched(4)),
+                    Std.parseInt(RE.HAXE_POSITION.matched(5))
+                ];
+
+            }
+
+            return position;
+
+        }
+
+        return null;
+
+    } //parse_position
+
         // TODO detect false positive on assign = inside <=, >= or ==
         /** Try to match a partial function call, declaration, or structure/variable assign
             from the given text and cursor index position and return info. */
-    public static function parse_position_info(original_text:String, index:Int) {
+    public static function parse_cursor_info(original_text:String, index:Int) {
             // Cleanup text
         var text = code_with_empty_comments_and_strings(original_text.substring(0, index));
 
@@ -553,7 +579,7 @@ class Haxe {
             }
         }
 
-        var result:HaxePositionInfo = {
+        var result:HaxeCursorInfo = {
             kind: position_kind
         };
 
@@ -656,7 +682,7 @@ class Haxe {
                         m = regex_identifier_decl.matched(1);
                         if (m == '(' || m == '?'  || m == ',') {
                                 // Is the identifier inside a signature? Ensure we are in a function declaration signature, not a simple call
-                            var info = parse_position_info(text, i + 1);
+                            var info = parse_cursor_info(text, i + 1);
                             if (info != null && info.kind == FUNCTION_DECLARATION) {
                                     // Yes, return position
                                 return i - identifier.length + 1;
@@ -1240,10 +1266,20 @@ typedef ParsePartialSignatureOptions = {
     @:optional var parse_declaration:Bool;
 }
 
-typedef HaxePositionInfo = {
+typedef HaxePosition = {
+
+    @:optional var file:String;
+
+    @:optional var line:Int;
+
+    @:optional var characters:Array<Int>;
+
+} //HaxePosition
+
+typedef HaxeCursorInfo = {
 
         /** Kind of parsed position info */
-    var kind:HaxePositionInfoKind;
+    var kind:HaxeCursorInfoKind;
 
         /** The position of the opening parenthesis starting
             the function call signature, if any */
@@ -1292,7 +1328,7 @@ typedef HaxePositionInfo = {
     @:optional var keyword_start:Int;
 }
 
-enum HaxePositionInfoKind {
+enum HaxeCursorInfoKind {
     FUNCTION_DECLARATION;
     FUNCTION_CALL;
     VARIABLE_ASSIGN;
@@ -1340,6 +1376,7 @@ private class RE {
     public static var ENDS_WITH_FUNCTION_KEYWORD:EReg = ~/[^a-zA-Z0-9_]function\s*$/;
     public static var IMPORT:EReg = ~/import\s*([a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)(?:\s+(?:in|as)\s+([a-zA-Z0-9_]+))?/g;
     public static var HAXE_COMPILER_OUTPUT_LINE:EReg = ~/^\s*(.+)?(?=:[0-9]*:):([0-9]+):\s+(characters|lines)\s+([0-9]+)\-([0-9]+)(?:\s+:\s*(.*?))?\s*$/;
+    public static var HAXE_POSITION:EReg = ~/^\s*(.+)?(?=:[0-9]*:):([0-9]+):\s+(characters|lines)\s+([0-9]+)\-([0-9]+)(?:\s+:\s*(.*?))?\s*$/;
     public static var ENDS_WITH_DOT_IDENTIFIER:EReg = ~/\.([a-zA-Z_0-9]*)$/;
     public static var ENDS_WITH_IDENTIFIER:EReg = ~/([a-zA-Z_0-9]+)$/;
     public static var ENDS_WITH_DOT_NUMBER:EReg = ~/[^a-zA-Z0-9_\]\)]([\.0-9]+)$/;

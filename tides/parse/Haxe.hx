@@ -250,7 +250,7 @@ class Haxe {
         /** Get string from parsed haxe type
             It may be useful to stringify a sub-type (group)
             of a previously parsed type */
-    public static function string_from_parsed_type(parsed_type:HaxeComposedType):String {
+    public static function string_from_parsed_type(parsed_type:HaxeComposedType, ?options:StringFromParsedTypeOptions):String {
 
         if (parsed_type == null) {
             return '';
@@ -265,7 +265,7 @@ class Haxe {
                 var str_arg;
                 var i = 0;
                 while (i < parsed_type.args.length) {
-                    str_arg = string_from_parsed_type(parsed_type.args[i]);
+                    str_arg = string_from_parsed_type(parsed_type.args[i], options);
                     if (parsed_type.args[i].args != null && parsed_type.args[i].args.length == 1) {
                         str_arg = '(' + str_arg + ')';
                     }
@@ -280,9 +280,9 @@ class Haxe {
 
             if (parsed_type.composed_type != null) {
                 if (parsed_type.composed_type.args != null) {
-                    result = str_args + '->(' + string_from_parsed_type(parsed_type.composed_type) + ')';
+                    result = str_args + '->(' + string_from_parsed_type(parsed_type.composed_type, options) + ')';
                 } else {
-                    result = str_args + '->' + string_from_parsed_type(parsed_type.composed_type) + '';
+                    result = str_args + '->' + string_from_parsed_type(parsed_type.composed_type, options) + '';
                 }
             } else {
                 result = str_args + '->' + parsed_type.type;
@@ -290,7 +290,7 @@ class Haxe {
         }
         else {
             if (parsed_type.composed_type != null) {
-                result = string_from_parsed_type(parsed_type.composed_type);
+                result = string_from_parsed_type(parsed_type.composed_type, options);
             } else {
                 result = parsed_type.type;
             }
@@ -299,12 +299,17 @@ class Haxe {
         if (parsed_type.params != null && parsed_type.params.length > 0) {
             var params = [];
             var i = 0;
+
             while (i < parsed_type.params.length) {
-                params.push(string_from_parsed_type(parsed_type.params[i]));
+                params.push(string_from_parsed_type(parsed_type.params[i], options));
                 i++;
             }
 
-            result += '<' + params.join(',') + '>';
+            if (options != null && options.compact && parsed_type.type != 'Null') {
+                result += '<\u2026>';
+            } else {
+                result += '<' + params.join(',') + '>';
+            }
         }
 
         return result;
@@ -1334,6 +1339,12 @@ enum HaxeCursorInfoKind {
     DOT_ACCESS;
     UNKNOWN;
 }
+
+typedef StringFromParsedTypeOptions = {
+
+    @:optional var compact:Bool;
+
+} //StringFromParsedTypeOptions
 
 typedef ParseCompilerOutputOptions = {
 

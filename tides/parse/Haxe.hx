@@ -252,6 +252,11 @@ class Haxe {
             of a previously parsed type */
     public static function string_from_parsed_type(parsed_type:HaxeComposedType, ?options:StringFromParsedTypeOptions):String {
 
+        if (options != null && options.unwrap_nulls) {
+            parsed_type = unwrap_nulls_from_parsed_type(parsed_type);
+            options = {hide_params: options.hide_params};
+        }
+
         if (parsed_type == null) {
             return '';
         }
@@ -305,7 +310,9 @@ class Haxe {
                 i++;
             }
 
-            if (options != null && options.compact && parsed_type.type != 'Null') {
+            if (options != null && options.hide_params
+                && parsed_type.type != 'Null'
+                && parsed_type.type != 'Array') { // TODO don't hardcode these
                 result += '<\u2026>';
             } else {
                 result += '<' + params.join(',') + '>';
@@ -315,6 +322,33 @@ class Haxe {
         return result;
 
     } //string_from_parsed_type
+
+    public static function unwrap_nulls_from_type_string(type_string:String):String {
+
+        while (type_string.startsWith('Null<') && type_string.endsWith('>')) {
+            type_string = type_string.substring(5, type_string.length - 1);
+        }
+
+        return type_string;
+    }
+
+    public static function unwrap_nulls_from_parsed_type(parsed_type:HaxeComposedType):HaxeComposedType {
+
+        while (parsed_type.type == 'Null' &&
+                (parsed_type.composed_type != null &&
+                parsed_type.composed_type.params != null &&
+                parsed_type.composed_type.params.length == 1) ||
+                (parsed_type.params != null &&
+                parsed_type.params.length == 1)) {
+            if (parsed_type.params != null && parsed_type.params.length == 1) {
+                parsed_type = parsed_type.params[0];
+            } else {
+                parsed_type = parsed_type.composed_type.params[0];
+            }
+        }
+
+        return parsed_type;
+    }
 
     public static function parse_position(position_string:String):HaxePosition {
 
@@ -1342,7 +1376,9 @@ enum HaxeCursorInfoKind {
 
 typedef StringFromParsedTypeOptions = {
 
-    @:optional var compact:Bool;
+    @:optional var hide_params:Bool;
+
+    @:optional var unwrap_nulls:Bool;
 
 } //StringFromParsedTypeOptions
 

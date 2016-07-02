@@ -334,13 +334,14 @@ class Haxe {
 
     public static function unwrap_nulls_from_parsed_type(parsed_type:HaxeComposedType):HaxeComposedType {
 
-        while (parsed_type.type == 'Null' &&
-                (parsed_type.composed_type != null &&
+        while ((parsed_type.composed_type != null &&
+                parsed_type.composed_type.type == 'Null' &&
                 parsed_type.composed_type.params != null &&
                 parsed_type.composed_type.params.length == 1) ||
-                (parsed_type.params != null &&
+               (parsed_type.type == 'Null' &&
+                parsed_type.params != null &&
                 parsed_type.params.length == 1)) {
-            if (parsed_type.params != null && parsed_type.params.length == 1) {
+            if (parsed_type.type == 'Null' && parsed_type.params != null && parsed_type.params.length == 1) {
                 parsed_type = parsed_type.params[0];
             } else {
                 parsed_type = parsed_type.composed_type.params[0];

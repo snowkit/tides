@@ -869,7 +869,7 @@ class Haxe {
             }
             else if (input.charAt(i) == '~') {
                 if (RE.BEGINS_WITH_REGEX.match(input.substring(i))) {
-                    var match_len = RE.BEGINS_WITH_STRING.matched(0).length;
+                    var match_len = RE.BEGINS_WITH_REGEX.matched(0).length;
                     output += '~/';
                     k = 1;
                     while (k < match_len - 2) {

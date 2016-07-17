@@ -329,8 +329,44 @@ class Haxe {
             type_string = type_string.substring(5, type_string.length - 1);
         }
 
+            // Anonymous structure type
+        if (type_string.startsWith('{')) {
+
+            var i = 0;
+            var len = type_string.length;
+            var c;
+            var number_of_unwrapped = 0;
+            var result = '';
+
+            while (i < len) {
+                c = type_string.charAt(i);
+
+                if (c == 'N') {
+                    if (type_string.substr(i, 5) == 'Null<'
+                    && !RE.IS_ALPHANUMERIC.match(type_string.charAt(i - 1))) {
+                        number_of_unwrapped++;
+                        i += 5;
+                    }
+                }
+                else if (number_of_unwrapped > 0 && c == '>') {
+                    if (type_string.charAt(i - 1) != '-') {
+                        number_of_unwrapped--;
+                        i++;
+                    }
+                }
+                else {
+                    result += c;
+                    i++;
+                }
+            }
+
+            type_string = result;
+
+        }
+
         return type_string;
-    }
+
+    } //unwrap_nulls_from_type_string
 
     public static function unwrap_nulls_from_parsed_type(parsed_type:HaxeComposedType):HaxeComposedType {
 
@@ -348,8 +384,13 @@ class Haxe {
             }
         }
 
+        if (parsed_type.type.startsWith('{')) {
+            parsed_type.type = unwrap_nulls_from_type_string(parsed_type.type);
+        }
+
         return parsed_type;
-    }
+
+    } //unwrap_nulls_from_parsed_type
 
     public static function parse_position(position_string:String):HaxePosition {
 
@@ -1418,6 +1459,7 @@ private class RE {
     public static var ENDS_WITH_KEY:EReg = ~/([a-zA-Z0-9_]+)\s*:$/;
     public static var ENDS_WITH_ALPHANUMERIC:EReg = ~/([A-Za-z0-9_]+)$/;
     public static var BEGINS_WITH_KEY:EReg = ~/^([a-zA-Z0-9_]+)\s*:/;
+    public static var IS_ALPHANUMERIC:EReg = ~/^([a-zA-Z0-9_]+)$/;
     public static var PACKAGE:EReg = ~/^package\s*([a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*)/;
     public static var ENDS_WITH_FUNCTION_DEF:EReg = ~/[^a-zA-Z0-9_]function(?:\s+[a-zA-Z0-9_]+)?(?:<[a-zA-Z0-9_<>, ]+>)?$/;
     public static var ENDS_WITH_FUNCTION_KEYWORD:EReg = ~/[^a-zA-Z0-9_]function\s*$/;

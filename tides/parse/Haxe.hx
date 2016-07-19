@@ -384,7 +384,7 @@ class Haxe {
             }
         }
 
-        if (parsed_type.type.startsWith('{')) {
+        if (parsed_type.type != null && parsed_type.type.startsWith('{')) {
             parsed_type.type = unwrap_nulls_from_type_string(parsed_type.type);
         }
 

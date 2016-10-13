@@ -453,6 +453,7 @@ class Haxe {
             // anonymous structure keys and values
         var can_set_colon_index = true;
         var colon_index = -1;
+        var semicolon_index = -1;
         var key_path = [];
         var used_keys = [];
         var partial_key = null;
@@ -507,6 +508,13 @@ class Haxe {
                 if (can_set_colon_index && number_of_braces == 0 && number_of_parens == 0 && number_of_lts == 0) {
                     colon_index = i;
                     can_set_colon_index = false;
+                }
+                i--;
+            }
+            else if (c == ';') {
+                if (number_of_braces == 0 && number_of_parens == 0 && number_of_lts == 0) {
+                    semicolon_index = i;
+                    break;
                 }
                 i--;
             }

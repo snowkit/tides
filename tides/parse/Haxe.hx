@@ -341,18 +341,14 @@ class Haxe {
             while (i < len) {
                 c = type_string.charAt(i);
 
-                if (c == 'N') {
-                    if (type_string.substr(i, 5) == 'Null<'
+                if (c == 'N' && type_string.substr(i, 5) == 'Null<'
                     && !RE.IS_ALPHANUMERIC.match(type_string.charAt(i - 1))) {
-                        number_of_unwrapped++;
-                        i += 5;
-                    }
+                    number_of_unwrapped++;
+                    i += 5;
                 }
-                else if (number_of_unwrapped > 0 && c == '>') {
-                    if (type_string.charAt(i - 1) != '-') {
-                        number_of_unwrapped--;
-                        i++;
-                    }
+                else if (number_of_unwrapped > 0 && c == '>' && type_string.charAt(i - 1) != '-') {
+                    number_of_unwrapped--;
+                    i++;
                 }
                 else {
                     result += c;
